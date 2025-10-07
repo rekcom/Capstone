@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Visor de Planos Inteligente</title>
+</head>
+<body>
+  <h2 id="welcome"></h2>
+
+  <!-- Controles -->
+  <input type="file" id="fileInput" accept="image/*"/>
+  <button id="zoomIn">Zoom +</button>
+  <button id="zoomOut">Zoom -</button>
+  <button id="reset">Reset</button>
+  <button id="logout">Cerrar sesión</button>
+
+  <!-- Lista de planos -->
+  <h3>Mis Planos</h3>
+  <ul id="planosList"></ul>
+
+  <!-- Canvas -->
+  <canvas id="canvas" width="800" height="600" style="border:1px solid #000;"></canvas>
+
+  <script>
+    const user = localStorage.getItem('user');
+    if (!user) {
+      alert('Debes iniciar sesión primero');
+      window.location.href = 'login.html';
+    } else {
+      document.getElementById('welcome').textContent = `¡Hola, ${user}!`;
+    }
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    let scale = 1, offsetX = 0, offsetY = 0;
+    let isDragging = false, startX, startY;
+    let img = null;
+
+    // Mensaje inicial
+    ctx.fillStyle = "#f0f0f0";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.font = "20px Arial";
+    ctx.fillStyle = "#333";
+    ctx.fillText("Carga un plano para visualizarlo", 20, 50);
+
+    function draw() {
+      if (!img) return;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.setTransform(scale, 0, 0, scale, offsetX, offsetY);
+      ctx.drawImage(img, 0, 0);
+    }
+
+    // ---------------- Subir archivo ----------------
+    document.getElementById('fileInput').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append('plano', file);
+      formData.append('username', user);
+
+      const res = await fetch('/planos/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (!res.ok) { alert(data.message); return; }
+
+      alert('Plano subido correctamente');
+
+      // Mostrar inmediatamente el plano subido
+      if (data.filename) loadPlano(data.filename);
+
+      // Actualizar lista de planos
+      fetchPlanos();
+    });
+
+    // ---------------- Lista de planos ----------------
+    async function fetchPlanos() {
+      const res = await fetch(`/planos/list/${user}`);
+      const data = await res.json();
+      const listEl = document.getElementById('planosList');
+      listEl.innerHTML = '';
+      data.planos.forEach(filename => {
+        const li = document.createElement('li');
+        li.textContent = filename;
+        li.style.cursor = 'pointer';
+        li.addEventListener('click', () => loadPlano(filename));
+        listEl.appendChild(li);
+      });
+    }
+
+    // ---------------- Cargar plano en canvas ----------------
+    function loadPlano(filename) {
+      img = new Image();
+      img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        scale = 1;
+        offsetX = 0;
+        offsetY = 0;
+        draw();
+      };
+      img.src = `/uploads/${filename}`; // Ruta correcta al archivo subido
+    }
+
+    // Inicializar lista al cargar la página
+    fetchPlanos();
+
+    // ---------------- Controles ----------------
+    document.getElementById('zoomIn').addEventListener('click', () => { scale *= 1.2; draw(); });
+    document.getElementById('zoomOut').addEventListener('click', () => { scale /= 1.2; draw(); });
+    document.getElementById('reset').addEventListener('click', () => { scale = 1; offsetX = 0; offsetY = 0; draw(); });
+
+    canvas.addEventListener('mousedown', (e) => { isDragging = true; startX = e.offsetX - offsetX; startY = e.offsetY - offsetY; });
+    canvas.addEventListener('mousemove', (e) => { if (isDragging) { offsetX = e.offsetX - startX; offsetY = e.offsetY - startY; draw(); }});
+    canvas.addEventListener('mouseup', () => { isDragging = false; });
+    canvas.addEventListener('mouseleave', () => { isDragging = false; });
+
+    document.getElementById('logout').addEventListener('click', () => {
+      localStorage.removeItem('user');
+      window.location.href = 'login.html';
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "visor-planos-inteligente",
+  "version": "1.0.0",
+  "description": "Aplicación web para interpretar planos 2D",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "author": "Tu Nombre",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "sqlite3": "^5.1.6",
+    "bcryptjs": "^2.4.3",
+    "multer": "^1.4.5-lts.1",
+    "cors": "^2.8.5",
+    "body-parser": "^1.20.2"
+  }
+}

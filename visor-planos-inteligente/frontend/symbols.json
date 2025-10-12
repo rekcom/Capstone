@@ -1,0 +1,5 @@
+[
+  { "name": "puerta", "description": "Indica una puerta", "color": "#ff0000" },
+  { "name": "ventana", "description": "Indica una ventana", "color": "#0000ff" },
+  { "name": "pared", "description": "Indica una pared", "color": "#000000" }
+]
